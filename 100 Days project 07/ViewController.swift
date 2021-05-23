@@ -22,30 +22,36 @@ class ViewController: UITableViewController {
             urlString = "https://api.whitehouse.gov/v1/petitions.json?signatureCountFloor=10000&limit=100"
         }
         
-        if let url = URL(string: urlString) {
-            if let data = try? Data(contentsOf: url){
-                parse(json: data)
-            } else {
-                showError()
+        DispatchQueue.global(qos: .userInitiated).async {
+            
+            if let url = URL(string: urlString) {
+                [weak self] in
+                if let data = try? Data(contentsOf: url){
+                    self?.parse(json: data)
+                    return
+                }
             }
-        } else {
-            showError()
+            self?.showError()
         }
     }
     
     func showError() {
-        let ac = UIAlertController(title: "Loading error", message: "Therewas a problem loadiding the feed; please check your connection and try again", preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "Ok", style: .default))
-        present(ac, animated: try)
+        DispatchQueue.main.async { [weak self] in
+            let ac = UIAlertController(title: "Loading error", message: "Therewas a problem loadiding the feed; please check your connection and try again", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "Ok", style: .default))
+            self?.present(ac, animated: true)
+        }
     }
     
     
     func parce(json: Data) {
         let decoder = JSONDecoder()
         
-        if let jsonPetitions = try? decoder.decode(Petitions.sels, from: json) {
+        if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
             petitions = jsonPetitions.results
-            tableView.reloadData()
+            DispatchQueue.main.async { [weak self] in
+                self?.tableView.reloadData()
+            }
         }
     }
     
@@ -65,8 +71,8 @@ class ViewController: UITableViewController {
         let vc = DetailViewController()
         vc.detailItem = petition[indexPath.row]
         UINavigationController?.pushViewController(vc, animated: true)
-    }
 }
+
 
 
 
